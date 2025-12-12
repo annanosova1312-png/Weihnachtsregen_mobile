@@ -8,15 +8,29 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
     html, body {
-      margin: 0;
-      padding: 0;
       height: 100%;
       overflow: hidden;
-      font-family: 'Nunito';
+      font-family: 'Nunito', sans-serif;
       background: url('zimnii_risunok.jpg') center/cover no-repeat fixed;
       touch-action: none;
+    }
+
+    h1 {
+      text-align: center;
+      color: white;
+      font-family: 'Baloo 2', cursive;
+      font-size: clamp(24px, 5vw, 40px);
+      text-shadow: 0 0 10px #ffd700;
+      margin: 6px 0 4px;
+    }
+
+    .hud {
+      text-align: center;
+      color: white;
+      font-size: clamp(16px, 4vw, 20px);
+      margin-bottom: 6px;
     }
 
     #gameContainer {
@@ -32,9 +46,6 @@
       display: block;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0);
-      position: relative;
-      z-index: 1;
     }
 
     #logo {
@@ -46,87 +57,62 @@
       pointer-events: none;
     }
 
-    /* Общий overlay */
+    /* Оверлеи */
     .overlay {
-      position: absolute;
+      position: fixed;
       inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.7);
-      z-index: 5;
+      z-index: 10;
     }
     .hidden { display: none !important; }
 
-    /* Стартовое окно — без затемнения */
-    #startOverlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 6;
-      background: none;
-    }
-
-    .start-box {
+    .start-box, .quiz-box, .end-box {
       background: #024;
       padding: 25px;
       border-radius: 20px;
       color: white;
       text-align: center;
       width: 85%;
-      max-width: 600px;
+      max-width: 550px;
       box-shadow: 0 0 20px rgba(0,0,0,0.4);
     }
 
+    .quiz-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 15px;
+    }
     .quiz-card {
-      cursor: pointer;
       border: 2px solid white;
       border-radius: 12px;
       padding: 10px;
       background: rgba(255,255,255,0.2);
       font-size: 16px;
-    }
-    .quiz-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      cursor: pointer;
     }
 
     button {
       padding: 14px 24px;
       font-size: 20px;
       border-radius: 14px;
-      cursor: pointer;
       border: none;
       background: #ffd700;
       color: #024;
       font-weight: bold;
       margin-top: 15px;
-    }
-
-    h1 {
-      text-align: center;
-      color: white;
-      font-family: 'Baloo 2';
-      font-size: clamp(24px, 5vw, 40px);
-      text-shadow: 0 0 10px #ffd700;
-      margin: 8px 0 0;
-    }
-
-    .hud {
-      text-align: center;
-      color: white;
-      margin: 4px 0 6px;
-      font-size: clamp(16px, 4vw, 20px);
+      cursor: pointer;
     }
 
     #snow {
       position: absolute;
-      inset: 0;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
-      z-index: 3;
+      z-index: 1;
     }
   </style>
 </head>
@@ -143,35 +129,24 @@
     <img id="logo" src="frau_anna.png" alt="Frau Anna Logo">
     <canvas id="snow"></canvas>
 
-    <!-- Стартовое окно -->
-    <div id="startOverlay">
-      <div class="start-box">
-        <h2 style="font-family:'Baloo 2'; font-size:28px; margin-top:0;">Weihnachtsregen 🎁</h2>
-        <p style="font-size:18px;">Fang die fallenden Weihnachtsobjekte!</p>
-        <button id="startButton">Start</button>
-      </div>
-    </div>
-
-    <!-- Квиз -->
+    <!-- Остальные оверлеи внутри контейнера (они поверх canvas) -->
     <div id="quizOverlay" class="overlay hidden">
-      <div style="background:#153; padding:20px; border-radius:20px; color:white; width:85%; max-width:500px; text-align:center;">
+      <div class="quiz-box">
         <h2 id="quizTitle">Wo ist ...?</h2>
         <div class="quiz-grid" id="quizOptions"></div>
       </div>
     </div>
 
-    <!-- Game Over -->
     <div id="gameOverOverlay" class="overlay hidden">
-      <div style="background:#300; padding:20px; border-radius:20px; color:white; width:85%; max-width:500px; text-align:center;">
+      <div class="end-box">
         <h2>Spiel vorbei!</h2>
         <p>Dein Punktestand: <span id="finalScore">0</span></p>
         <button onclick="restartGame()">Nochmal spielen</button>
       </div>
     </div>
 
-    <!-- Congrats -->
     <div id="congratsOverlay" class="overlay hidden">
-      <div style="background:#035; padding:20px; border-radius:20px; color:white; width:85%; max-width:500px; text-align:center; position:relative;">
+      <div class="end-box" style="position:relative;">
         <button onclick="restartGame()" style="position:absolute; top:10px; right:15px; background:none; border:none; color:white; font-size:24px;">✖</button>
         <h2 style="font-size:28px; color:#fff;">Hurra! 🎉</h2>
         <p style="font-size:20px; color:#ffdd55;">Du hast alle 10 Fragen geschafft!</p>
@@ -180,12 +155,20 @@
     </div>
   </div>
 
+  <!-- СТАРТОВОЕ ОКНО — ВНЕ КОНТЕЙНЕРА, ПОЛНОСТЬЮ ПОВЕРХ ВСЕГО -->
+  <div id="startOverlay" class="overlay">
+    <div class="start-box">
+      <h2 style="font-family:'Baloo 2'; font-size:28px; margin-top:0;">Weihnachtsregen 🎁</h2>
+      <p style="font-size:18px;">Fang die fallenden Weihnachtsobjekte!</p>
+      <button id="startButton">Start</button>
+    </div>
+  </div>
+
 <script>
-// Музыка
+// === ОСНОВНЫЕ НАСТРОЙКИ ===
 const bgMusic = document.getElementById("bgMusic");
 bgMusic.volume = 0.15;
 
-// Данные предметов
 const itemDefinitions = [
   { key:'die_kerze', article:'die', word:'Kerze' },
   { key:'die_glocke', article:'die', word:'Glocke' },
@@ -216,20 +199,20 @@ const canvas = document.getElementById("gameCanvas");
 const snowCanvas = document.getElementById("snow");
 const container = document.getElementById("gameContainer");
 
-// Адаптируем canvas под контейнер (сохраняем пропорции 900×550)
-function resizeCanvas() {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  canvas.width = width;
-  canvas.height = height;
-  snowCanvas.width = width;
-  snowCanvas.height = height;
+// Размеры логической сцены
+const GAME_WIDTH = 900;
+const GAME_HEIGHT = 550;
+let scaleX = 1, scaleY = 1;
 
-  // Сохраняем логические размеры игры как 900×550 для расчётов
-  gameWidth = 900;
-  gameHeight = 550;
-  scaleX = width / gameWidth;
-  scaleY = height / gameHeight;
+function resizeCanvas() {
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  canvas.width = w;
+  canvas.height = h;
+  snowCanvas.width = w;
+  snowCanvas.height = h;
+  scaleX = w / GAME_WIDTH;
+  scaleY = h / GAME_HEIGHT;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -240,15 +223,9 @@ const snowCtx = snowCanvas.getContext("2d");
 let score = 0, misses = 0, caught = 0;
 let items = [];
 let spawnTimer = 0;
-let spawnInterval = 1000;
 let gameActive = false;
 let inQuiz = false;
-let last = 0;
-
-// Логические размеры (не зависят от экрана)
-const gameWidth = 900;
-const gameHeight = 550;
-let scaleX = 1, scaleY = 1;
+let lastTime = 0;
 
 let sack = { x: 400, y: 470, width: 100, height: 80, speed: 400 };
 
@@ -257,68 +234,54 @@ let currentQuestion = null;
 let attempts = 0;
 let answered = 0;
 
-// Загрузка ассетов
+// === ЗАГРУЗКА АССЕТОВ ===
 const images = {}, audios = {};
-function loadAssets(){
-  const sackImg = new Image(); sackImg.src = 'sack.png'; images['sack'] = sackImg;
+function loadAssets() {
+  images['sack'] = new Image(); images['sack'].src = 'sack.png';
   itemDefinitions.forEach(i => {
-    const im = new Image(); im.src = i.key + '.png'; images[i.key] = im;
+    images[i.key] = new Image();
+    images[i.key].src = i.key + '.png';
   });
-  audios['klick'] = new Audio('klick_auf.wav');
-  audios['nein'] = new Audio('nein.wav');
   audios['ja'] = new Audio('ja.wav');
-  itemDefinitions.forEach(i => audios[i.key] = new Audio(i.key + '.wav'));
+  audios['nein'] = new Audio('nein.wav');
+  itemDefinitions.forEach(i => {
+    audios[i.key] = new Audio(i.key + '.wav');
+  });
 }
 loadAssets();
 
-// Сброс управления
-let touchActive = false;
-let startX = 0;
-
-// Сенсорное управление (для мешка)
+// === УПРАВЛЕНИЕ ===
+let isTouching = false;
 canvas.addEventListener("pointerdown", e => {
-  touchActive = true;
-  const rect = canvas.getBoundingClientRect();
-  startX = (e.clientX - rect.left) / scaleX;
-  sack.x = startX - sack.width / 2;
-});
-
-canvas.addEventListener("pointermove", e => {
-  if (!touchActive) return;
+  isTouching = true;
   const rect = canvas.getBoundingClientRect();
   const x = (e.clientX - rect.left) / scaleX;
   sack.x = x - sack.width / 2;
 });
-
-canvas.addEventListener("pointerup", () => { touchActive = false; });
-canvas.addEventListener("pointercancel", () => { touchActive = false; });
-
-// Также оставляем клавиатуру для ПК/планшетов с клавой
-let left = false, right = false;
-document.addEventListener("keydown", e => {
-  if (e.key === 'ArrowLeft') left = true;
-  if (e.key === 'ArrowRight') right = true;
+canvas.addEventListener("pointermove", e => {
+  if (!isTouching) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / scaleX;
+  sack.x = x - sack.width / 2;
 });
-document.addEventListener("keyup", e => {
-  if (e.key === 'ArrowLeft') left = false;
-  if (e.key === 'ArrowRight') right = false;
+["pointerup", "pointercancel"].forEach(ev => {
+  canvas.addEventListener(ev, () => isTouching = false);
 });
 
-// Старт
-document.getElementById("startButton").onclick = () => {
+// === СТАРТ ===
+document.getElementById("startButton").addEventListener("click", () => {
   document.getElementById("startOverlay").classList.add("hidden");
   bgMusic.play().catch(() => {});
   gameActive = true;
-};
+});
 
-// Снег (адаптивный)
-let snowflakes = Array.from({ length: 120 }, () => ({
-  x: Math.random() * gameWidth,
-  y: Math.random() * gameHeight,
+// === СНЕГ ===
+let snowflakes = Array.from({length: 100}, () => ({
+  x: Math.random() * GAME_WIDTH,
+  y: Math.random() * GAME_HEIGHT,
   r: Math.random() * 3 + 1,
-  s: Math.random() * 1 + 0.5
+  speed: Math.random() * 1 + 0.5
 }));
-
 function drawSnow() {
   snowCtx.clearRect(0, 0, snowCanvas.width, snowCanvas.height);
   snowflakes.forEach(f => {
@@ -326,26 +289,28 @@ function drawSnow() {
     snowCtx.arc(f.x * scaleX, f.y * scaleY, f.r, 0, Math.PI * 2);
     snowCtx.fillStyle = "white";
     snowCtx.fill();
-    f.y += f.s;
-    if (f.y > gameHeight) {
+    f.y += f.speed;
+    if (f.y > GAME_HEIGHT) {
       f.y = -5;
-      f.x = Math.random() * gameWidth;
+      f.x = Math.random() * GAME_WIDTH;
     }
   });
 }
 
-// Квиз
+// === КВИЗ ===
 function startQuiz() {
   inQuiz = true;
   currentQuestion = remainingQuestions.shift();
   attempts = 0;
-  document.getElementById("quizTitle").textContent =
-    currentQuestion.key === 'die_lichter'
-      ? 'Wo sind die Lichter?'
-      : `Wo ist ${currentQuestion.article} ${currentQuestion.word}?`;
+  const titleEl = document.getElementById("quizTitle");
+  if (currentQuestion.key === 'die_lichter') {
+    titleEl.textContent = 'Wo sind die Lichter?';
+  } else {
+    titleEl.textContent = `Wo ist ${currentQuestion.article} ${currentQuestion.word}?`;
+  }
 
   const options = [currentQuestion];
-  const others = itemDefinitions.filter(x => x.key !== currentQuestion.key);
+  const others = itemDefinitions.filter(i => i.key !== currentQuestion.key);
   shuffle(others);
   options.push(...others.slice(0, 2));
   shuffle(options);
@@ -353,72 +318,73 @@ function startQuiz() {
   const box = document.getElementById("quizOptions");
   box.innerHTML = "";
   options.forEach(opt => {
-    const btn = document.createElement("div");
-    btn.className = "quiz-card";
-    btn.dataset.key = opt.key;
-    btn.innerHTML = `<img src="${opt.key}.png" style="width:100%;"><div>${opt.article} ${opt.word}</div>`;
-    box.appendChild(btn);
+    const el = document.createElement("div");
+    el.className = "quiz-card";
+    el.dataset.key = opt.key;
+    el.innerHTML = `<img src="${opt.key}.png" style="width:100%;"><div>${opt.article} ${opt.word}</div>`;
+    box.appendChild(el);
   });
 
   document.getElementById("quizOverlay").classList.remove("hidden");
-  stopAllAudio();
-  audios[currentQuestion.key].play().catch(() => {});
+  playSound(currentQuestion.key);
+}
+
+function playSound(name) {
+  const a = audios[name];
+  if (a) { a.pause(); a.currentTime = 0; a.play().catch(() => {}); }
 }
 
 function stopAllAudio() {
-  for (const a of Object.values(audios)) {
-    a.pause(); a.currentTime = 0;
-  }
+  Object.values(audios).forEach(a => { a.pause(); a.currentTime = 0; });
 }
 
 document.getElementById("quizOptions").addEventListener("click", e => {
   const card = e.target.closest('.quiz-card');
   if (!card || !currentQuestion) return;
-  const chosen = card.dataset.key.trim();
-  const correct = currentQuestion.key.trim();
-  if (chosen === correct) {
-    let bonus = attempts === 0 ? 3 : attempts === 1 ? 2 : 1;
-    score += bonus;
+  const chosen = card.dataset.key;
+  if (chosen === currentQuestion.key) {
+    score += (attempts === 0 ? 3 : attempts === 1 ? 2 : 1);
     answered++;
     stopAllAudio();
-    audios['ja'].play().catch(() => {});
+    playSound('ja');
     document.getElementById("quizOverlay").classList.add("hidden");
     inQuiz = false;
-    currentQuestion = null;
     updateHUD();
     if (answered >= TOTAL_QUESTIONS) showCongrats();
   } else {
     attempts++;
     stopAllAudio();
-    audios['nein'].play().catch(() => {});
+    playSound('nein');
   }
 });
 
-// Конец игры
+// === ЗАВЕРШЕНИЕ ===
 function endGame() {
   gameActive = false;
   document.getElementById("finalScore").textContent = score;
   document.getElementById("gameOverOverlay").classList.remove("hidden");
 }
-function restartGame() { location.reload(); }
 function showCongrats() {
   document.getElementById("congratsOverlay").classList.remove("hidden");
 }
-
-// Игровой цикл
-function shuffle(a) {
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+function restartGame() {
+  location.reload();
 }
 
-function spawn() {
+// === ИГРОВОЙ ЦИКЛ ===
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function spawnItem() {
   const def = itemDefinitions[Math.floor(Math.random() * itemDefinitions.length)];
   items.push({
     key: def.key,
-    x: Math.random() * (gameWidth - 60),
+    x: Math.random() * (GAME_WIDTH - 60),
     y: -60,
     width: 60,
     height: 60,
@@ -435,63 +401,64 @@ function updateHUD() {
 function update(dt) {
   if (!gameActive || inQuiz) return;
 
-  // Клавиатурное управление (для планшетов с клавой)
-  if (left) sack.x -= sack.speed * dt;
-  if (right) sack.x += sack.speed * dt;
-
-  // Ограничения по краям (в логических координатах)
+  // Границы
   if (sack.x < 0) sack.x = 0;
-  if (sack.x + sack.width > gameWidth) sack.x = gameWidth - sack.width;
+  if (sack.x + sack.width > GAME_WIDTH) sack.x = GAME_WIDTH - sack.width;
 
+  // Спавн
   spawnTimer += dt * 1000;
-  if (spawnTimer > spawnInterval) {
-    spawn();
+  if (spawnTimer > 1000) {
+    spawnItem();
     spawnTimer = 0;
   }
 
-  let remain = [];
-  for (const it of items) {
-    it.y += it.speed * dt;
-    if (checkColl(it, sack)) {
+  // Обновление предметов
+  let remaining = [];
+  for (const item of items) {
+    item.y += item.speed * dt;
+    if (checkCollision(item, sack)) {
       score++; caught++; misses = 0;
-      if (caught % 5 === 0 && remainingQuestions.length > 0) startQuiz();
-      continue;
-    }
-    if (it.y > gameHeight + 10) {
+      if (caught > 0 && caught % 5 === 0 && remainingQuestions.length > 0) {
+        startQuiz();
+      }
+    } else if (item.y > GAME_HEIGHT + 20) {
       misses++;
-      if (misses >= 3) endGame();
-      continue;
+      if (misses >= 3) {
+        endGame();
+        return;
+      }
+    } else {
+      remaining.push(item);
     }
-    remain.push(it);
   }
-  items = remain;
+  items = remaining;
   updateHUD();
 }
 
-function checkColl(a, b) {
+function checkCollision(a, b) {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  items.forEach(it => {
-    ctx.drawImage(images[it.key], it.x * scaleX, it.y * scaleY, it.width * scaleX, it.height * scaleY);
+  items.forEach(item => {
+    ctx.drawImage(images[item.key], item.x * scaleX, item.y * scaleY, item.width * scaleX, item.height * scaleY);
   });
   ctx.drawImage(images['sack'], sack.x * scaleX, sack.y * scaleY, sack.width * scaleX, sack.height * scaleY);
   drawSnow();
 }
 
-function loop(t) {
-  if (!last) last = t;
-  let dt = (t - last) / 1000;
-  last = t;
+function gameLoop(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  const dt = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
   update(dt);
   draw();
-  requestAnimationFrame(loop);
+  requestAnimationFrame(gameLoop);
 }
-requestAnimationFrame(loop);
+requestAnimationFrame(gameLoop);
 
-// Инициализация
+// === ИНИЦИАЛИЗАЦИЯ ===
 remainingQuestions = shuffle([...itemDefinitions]).slice(0, TOTAL_QUESTIONS);
 updateHUD();
 </script>
