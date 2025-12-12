@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Weihnachtsregen – Mobile</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body { height:100%; }
+    body {
+      margin:0;
+      font-family:'Nunito', sans-serif;
+      background:url('zimnii_risunok.jpg') center/cover no-repeat fixed;
+      overflow:hidden;
+      touch-action:none;
+    }
+
+    #topbar{
+      text-align:center;
+      color:white;
+      padding:10px 6px;
+      user-select:none;
+    }
+    #topbar h1{
+      margin:0;
+      font-family:'Baloo 2';
+      font-size:clamp(22px,4vw,38px);
+      text-shadow:0 0 10px #ffd700;
+    }
+    #hud{
+      margin-top:6px;
+      font-size:clamp(14px,2.5vw,20px);
+    }
+
+    #stage{
+      position:relative;
+      width:100vw;
+      height:calc(100vh - 90px);
+    }
+
+    canvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      touch-action:none;
+    }
+
+    #rotateHint{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.85);
+      color:white;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
+      text-align:center;
+      z-index:999;
+    }
+    @media (orientation:portrait){
+      #rotateHint{display:flex;}
+    }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>Weihnachtsregen 🎄</h1>
+  <div id="hud">
+    Punkte: <span id="score">0</span> • Verpasst: <span id="misses">0</span>/3
+  </div>
+</div>
+
+<div id="stage">
+  <canvas id="game"></canvas>
+</div>
+
+<div id="rotateHint">📱 Поверни устройство горизонтально</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+let W=0, H=0;
+function resize(){
+  const r = canvas.parentElement.getBoundingClientRect();
+  canvas.width = r.width;
+  canvas.height = r.height;
+  W = canvas.width;
+  H = canvas.height;
+  sack.y = H - sack.h - 10;
+}
+window.addEventListener('resize', resize);
+
+let sack = { x:200, y:0, w:100, h:60 };
+let dragging=false;
+
+canvas.addEventListener('pointerdown', e=>{
+  dragging=true;
+  moveSack(e);
+});
+canvas.addEventListener('pointermove', e=>{
+  if(dragging) moveSack(e);
+});
+canvas.addEventListener('pointerup', ()=> dragging=false);
+canvas.addEventListener('pointercancel', ()=> dragging=false);
+
+function moveSack(e){
+  const r = canvas.getBoundingClientRect();
+  sack.x = e.clientX - r.left - sack.w/2;
+  sack.x = Math.max(0, Math.min(W - sack.w, sack.x));
+}
+
+let items=[];
+let score=0, misses=0;
+
+function spawn(){
+  items.push({
+    x: Math.random()*(W-40),
+    y: -40,
+    w:40, h:40,
+    v: 140+Math.random()*80
+  });
+}
+
+let last=0, timer=0;
+function loop(t){
+  if(!last) last=t;
+  const dt=(t-last)/1000;
+  last=t;
+
+  timer+=dt;
+  if(timer>1){ spawn(); timer=0; }
+
+  ctx.clearRect(0,0,W,H);
+
+  items.forEach(it=>{
+    it.y += it.v*dt;
+    ctx.fillStyle='red';
+    ctx.fillRect(it.x,it.y,it.w,it.h);
+
+    if(it.x < sack.x+sack.w && it.x+it.w > sack.x &&
+       it.y < sack.y+sack.h && it.y+it.h > sack.y){
+      score++;
+      it.hit=true;
+    }
+    if(it.y > H){ misses++; it.hit=true; }
+  });
+  items = items.filter(i=>!i.hit);
+
+  ctx.fillStyle='brown';
+  ctx.fillRect(sack.x,sack.y,sack.w,sack.h);
+
+  document.getElementById('score').textContent=score;
+  document.getElementById('misses').textContent=misses;
+
+  requestAnimationFrame(loop);
+}
+
+resize();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
