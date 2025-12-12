@@ -317,13 +317,13 @@ function startQuiz() {
 
   const box = document.getElementById("quizOptions");
   box.innerHTML = "";
-  options.forEach(opt => {
-    const el = document.createElement("div");
-    el.className = "quiz-card";
-    el.dataset.key = opt.key;
-    el.innerHTML = `<img src="${opt.key}.png" style="width:100%;"><div>${opt.article} ${opt.word}</div>`;
-    box.appendChild(el);
-  });
+options.forEach(opt => {
+  const btn = document.createElement("div");
+  btn.className = "quiz-card";
+  btn.dataset.key = opt.key;
+  btn.innerHTML = `<img src="${opt.key}.png" style="width:100%;">`;
+  box.appendChild(btn);
+});
 
   document.getElementById("quizOverlay").classList.remove("hidden");
   playSound(currentQuestion.key);
